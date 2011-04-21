@@ -2534,6 +2534,7 @@ static int ix86_arch_specified;
 #define OPTION_MASK_ISA_SAHF_SET OPTION_MASK_ISA_SAHF
 #define OPTION_MASK_ISA_MOVBE_SET OPTION_MASK_ISA_MOVBE
 #define OPTION_MASK_ISA_CRC32_SET OPTION_MASK_ISA_CRC32
+#define OPTION_MASK_ISA_DTA_SET OPTION_MASK_ISA_DTA
 
 #define OPTION_MASK_ISA_FSGSBASE_SET OPTION_MASK_ISA_FSGSBASE
 #define OPTION_MASK_ISA_RDRND_SET OPTION_MASK_ISA_RDRND
@@ -2590,6 +2591,7 @@ static int ix86_arch_specified;
 #define OPTION_MASK_ISA_SAHF_UNSET OPTION_MASK_ISA_SAHF
 #define OPTION_MASK_ISA_MOVBE_UNSET OPTION_MASK_ISA_MOVBE
 #define OPTION_MASK_ISA_CRC32_UNSET OPTION_MASK_ISA_CRC32
+#define OPTION_MASK_ISA_DTA_UNSET OPTION_MASK_ISA_DTA
 
 #define OPTION_MASK_ISA_FSGSBASE_UNSET OPTION_MASK_ISA_FSGSBASE
 #define OPTION_MASK_ISA_RDRND_UNSET OPTION_MASK_ISA_RDRND
@@ -2989,6 +2991,19 @@ ix86_handle_option (struct gcc_options *opts,
 	}
       return true;
 
+    case OPT_mdta:
+      if (value)
+	{
+	  ix86_isa_flags |= OPTION_MASK_ISA_DTA_SET;
+	  ix86_isa_flags_explicit |= OPTION_MASK_ISA_DTA_SET;
+	}
+      else
+	{
+	  ix86_isa_flags &= ~OPTION_MASK_ISA_DTA_UNSET;
+	  ix86_isa_flags_explicit |= OPTION_MASK_ISA_DTA_UNSET;
+	}
+      return true;
+
     case OPT_maes:
       if (value)
 	{
@@ -3097,6 +3112,7 @@ ix86_target_string (int isa, int flags, const char *arch, const char *tune,
     { "-mpopcnt",	OPTION_MASK_ISA_POPCNT },
     { "-mmovbe",	OPTION_MASK_ISA_MOVBE },
     { "-mcrc32",	OPTION_MASK_ISA_CRC32 },
+    { "-mdta",          OPTION_MASK_ISA_DTA },
     { "-maes",		OPTION_MASK_ISA_AES },
     { "-mpclmul",	OPTION_MASK_ISA_PCLMUL },
     { "-mfsgsbase",	OPTION_MASK_ISA_FSGSBASE },
@@ -4024,6 +4040,12 @@ ix86_option_override_internal (bool main_args_p)
       x86_prefetch_sse = true;
     }
 
+  /* /\* Turn on DTA builtins for -mdta *\/ */
+  /* if (TARGET_DTA) */
+  /*   { */
+  /*     ix86_isa_flags |= OPTION_MASK_ISA_DTA & ~ix86_isa_flags_explicit; */
+  /*   } */
+
   /* Turn on popcnt instruction for -msse4.2 or -mabm.  */
   if (TARGET_SSE4_2 || TARGET_ABM)
     ix86_isa_flags |= OPTION_MASK_ISA_POPCNT & ~ix86_isa_flags_explicit;
@@ -4547,6 +4569,7 @@ ix86_valid_target_attribute_inner_p (tree args, char *p_strings[])
     IX86_ATTR_ISA ("tbm",	OPT_mtbm),
     IX86_ATTR_ISA ("aes",	OPT_maes),
     IX86_ATTR_ISA ("avx",	OPT_mavx),
+    IX86_ATTR_ISA ("dta",	OPT_mdta),
     IX86_ATTR_ISA ("mmx",	OPT_mmmx),
     IX86_ATTR_ISA ("pclmul",	OPT_mpclmul),
     IX86_ATTR_ISA ("popcnt",	OPT_mpopcnt),
@@ -24077,6 +24100,13 @@ enum ix86_builtins
   IX86_BUILTIN_CRC32SI,
   IX86_BUILTIN_CRC32DI,
 
+  /* DTA. */
+  IX86_BUILTIN_TEND,
+  IX86_BUILTIN_TSTORE,
+  IX86_BUILTIN_TREAD,
+  IX86_BUILTIN_TDECREASE,
+  IX86_BUILTIN_TCREATE,
+
   IX86_BUILTIN_PCMPESTRI128,
   IX86_BUILTIN_PCMPESTRM128,
   IX86_BUILTIN_PCMPESTRA128,
@@ -25266,6 +25296,10 @@ static const struct builtin_description bdesc_args[] =
   { OPTION_MASK_ISA_SSE4_2 | OPTION_MASK_ISA_CRC32, CODE_FOR_sse4_2_crc32si, "__builtin_ia32_crc32si", IX86_BUILTIN_CRC32SI, UNKNOWN, (int) UINT_FTYPE_UINT_UINT },
   { OPTION_MASK_ISA_SSE4_2 | OPTION_MASK_ISA_CRC32 | OPTION_MASK_ISA_64BIT, CODE_FOR_sse4_2_crc32di, "__builtin_ia32_crc32di", IX86_BUILTIN_CRC32DI, UNKNOWN, (int) UINT64_FTYPE_UINT64_UINT64 },
 
+  /* DTA */
+  { OPTION_MASK_ISA_DTA, CODE_FOR_dta_tcreate, "__builtin_ia32_tcreate", IX86_BUILTIN_TCREATE, UNKNOWN, (int) PVOID_FTYPE_PVOID_UINT },
+  { OPTION_MASK_ISA_DTA, CODE_FOR_dta_tread, "__builtin_ia32_tread", IX86_BUILTIN_TREAD, UNKNOWN, (int) UINT_FTYPE_UINT },
+
   /* SSE4A */
   { OPTION_MASK_ISA_SSE4A, CODE_FOR_sse4a_extrqi, "__builtin_ia32_extrqi", IX86_BUILTIN_EXTRQI, UNKNOWN, (int) V2DI_FTYPE_V2DI_UINT_UINT },
   { OPTION_MASK_ISA_SSE4A, CODE_FOR_sse4a_extrq, "__builtin_ia32_extrq", IX86_BUILTIN_EXTRQ, UNKNOWN, (int) V2DI_FTYPE_V2DI_V16QI },
@@ -25772,6 +25806,14 @@ ix86_init_mmx_sse_builtins (void)
 	       VOID_FTYPE_PCVOID_UNSIGNED_UNSIGNED, IX86_BUILTIN_MONITOR);
   def_builtin (OPTION_MASK_ISA_SSE3, "__builtin_ia32_mwait",
 	       VOID_FTYPE_UNSIGNED_UNSIGNED, IX86_BUILTIN_MWAIT);
+
+  /* DTA */
+  def_builtin (OPTION_MASK_ISA_DTA, "__builtin_ia32_tstore",
+	       VOID_FTYPE_UINT_PVOID_UINT, IX86_BUILTIN_TSTORE);
+  def_builtin (OPTION_MASK_ISA_DTA, "__builtin_ia32_tdecrease",
+	       VOID_FTYPE_PVOID, IX86_BUILTIN_TDECREASE);
+  def_builtin (OPTION_MASK_ISA_DTA, "__builtin_ia32_tend",
+	       VOID_FTYPE_VOID, IX86_BUILTIN_TEND);
 
   /* AES */
   def_builtin_const (OPTION_MASK_ISA_AES, "__builtin_ia32_aesenc128",
@@ -26693,6 +26735,8 @@ ix86_expand_args_builtin (const struct builtin_description *d,
     case FLOAT128_FTYPE_FLOAT128:
     case FLOAT_FTYPE_FLOAT:
     case INT_FTYPE_INT:
+    case UINT_FTYPE_UINT:
+    case VOID_FTYPE_UINT:
     case UINT64_FTYPE_INT:
     case UINT16_FTYPE_UINT16:
     case INT64_FTYPE_INT64:
@@ -26821,6 +26865,7 @@ ix86_expand_args_builtin (const struct builtin_description *d,
       break;
     case UINT64_FTYPE_UINT64_UINT64:
     case UINT_FTYPE_UINT_UINT:
+    case PVOID_FTYPE_PVOID_UINT:
     case UINT_FTYPE_UINT_USHORT:
     case UINT_FTYPE_UINT_UCHAR:
     case UINT16_FTYPE_UINT16_INT:
@@ -27152,6 +27197,7 @@ ix86_expand_special_args_builtin (const struct builtin_description *d,
       memory = ARRAY_SIZE (args);
       break;
     case VOID_FTYPE_UINT_UINT_UINT:
+    case VOID_FTYPE_UINT_PVOID_UINT:
     case VOID_FTYPE_UINT64_UINT_UINT:
     case UCHAR_FTYPE_UINT_UINT_UINT:
     case UCHAR_FTYPE_UINT64_UINT_UINT:
@@ -27425,6 +27471,34 @@ ix86_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
 
   switch (fcode)
     {
+    case IX86_BUILTIN_TSTORE:
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      arg1 = CALL_EXPR_ARG (exp, 1);
+      arg2 = CALL_EXPR_ARG (exp, 2);
+      op0 = expand_normal (arg0);
+      op1 = expand_normal (arg1);
+      op2 = expand_normal (arg2);
+      if (!REG_P (op0))
+	op0 = copy_to_mode_reg (SImode, op0);
+      if (!REG_P (op1))
+	op1 = copy_to_mode_reg (SImode, op1);
+      if (!REG_P (op2))
+	op1 = copy_to_mode_reg (SImode, op2);
+      emit_insn (gen_dta_tstore (op0, op1, op2));
+      return 0;
+
+    case IX86_BUILTIN_TDECREASE:
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      op0 = expand_normal (arg0);
+      if (!REG_P (op0))
+	op0 = copy_to_mode_reg (SImode, op0);
+      emit_insn (gen_dta_tdecrease (op0));
+      return 0;
+
+    case IX86_BUILTIN_TEND:
+      emit_insn (gen_dta_tend ());
+      return 0;
+
     case IX86_BUILTIN_MASKMOVQ:
     case IX86_BUILTIN_MASKMOVDQU:
       icode = (fcode == IX86_BUILTIN_MASKMOVQ

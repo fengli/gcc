@@ -71,6 +71,7 @@ __crc32d (unsigned int __C, unsigned int __V)
 {
   return __builtin_ia32_crc32si (__C, __V);
 }
+
 #endif /* SSE4.2 */
 
 /* 32bit popcnt */

@@ -71,7 +71,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define TARGET_FSGSBASE	OPTION_ISA_FSGSBASE
 #define TARGET_RDRND	OPTION_ISA_RDRND
 #define TARGET_F16C	OPTION_ISA_F16C
-
+#define TARGET_DTA      OPTION_ISA_DTA
 
 /* SSE4.1 defines round instructions */
 #define	OPTION_MASK_ISA_ROUND	OPTION_MASK_ISA_SSE4_1

@@ -110,6 +110,14 @@
 #define vec_vavguh __builtin_vec_vavguh
 #define vec_vavgsb __builtin_vec_vavgsb
 #define vec_vavgub __builtin_vec_vavgub
+
+#define vec_vforksw __builtin_vec_vforksw
+#define vec_vforkuw __builtin_vec_vforkuw
+#define vec_vforksh __builtin_vec_vforksh
+#define vec_vforkuh __builtin_vec_vforkuh
+#define vec_vforksb __builtin_vec_vforksb
+#define vec_vforkub __builtin_vec_vforkub
+
 #define vec_ceil __builtin_vec_ceil
 #define vec_cmpb __builtin_vec_cmpb
 #define vec_vcmpeqfp __builtin_vec_vcmpeqfp
@@ -192,6 +200,9 @@
 #define vec_and __builtin_vec_and
 #define vec_andc __builtin_vec_andc
 #define vec_avg __builtin_vec_avg
+
+#define vec_fork __builtin_vec_fork
+
 #define vec_cmpeq __builtin_vec_cmpeq
 #define vec_cmpgt __builtin_vec_cmpgt
 #define vec_ctf __builtin_vec_ctf

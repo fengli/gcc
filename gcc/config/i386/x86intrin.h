@@ -54,6 +54,10 @@
 #include <smmintrin.h>
 #endif
 
+#if defined (__DTA__)
+#include <dtaintrin.h>
+#endif
+
 #if defined (__AES__) || defined (__PCLMUL__)
 #include <wmmintrin.h>
 #endif

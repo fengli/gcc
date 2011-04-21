@@ -401,6 +401,10 @@ msse2avx
 Target Report Var(ix86_sse2avx)
 Encode SSE instructions with VEX prefix
 
+mdta
+Target Report Mask(ISA_DTA) Var(ix86_isa_flags) VarExists Save
+Support code generation of DTA instruction.
+
 mfsgsbase
 Target Report Mask(ISA_FSGSBASE) Var(ix86_isa_flags) Save
 Support FSGSBASE built-in functions and code generation

@@ -10187,6 +10187,14 @@ static struct builtin_description bdesc_2arg[] =
   { MASK_ALTIVEC, CODE_FOR_altivec_vavgsh, "__builtin_altivec_vavgsh", ALTIVEC_BUILTIN_VAVGSH },
   { MASK_ALTIVEC, CODE_FOR_altivec_vavguw, "__builtin_altivec_vavguw", ALTIVEC_BUILTIN_VAVGUW },
   { MASK_ALTIVEC, CODE_FOR_altivec_vavgsw, "__builtin_altivec_vavgsw", ALTIVEC_BUILTIN_VAVGSW },
+
+  { MASK_ALTIVEC, CODE_FOR_altivec_vforkub, "__builtin_altivec_vforkub", ALTIVEC_BUILTIN_VFORKUB },
+  { MASK_ALTIVEC, CODE_FOR_altivec_vforksb, "__builtin_altivec_vforksb", ALTIVEC_BUILTIN_VFORKSB },
+  { MASK_ALTIVEC, CODE_FOR_altivec_vforkuh, "__builtin_altivec_vforkuh", ALTIVEC_BUILTIN_VFORKUH },
+  { MASK_ALTIVEC, CODE_FOR_altivec_vforksh, "__builtin_altivec_vforksh", ALTIVEC_BUILTIN_VFORKSH },
+  { MASK_ALTIVEC, CODE_FOR_altivec_vforkuw, "__builtin_altivec_vforkuw", ALTIVEC_BUILTIN_VFORKUW },
+  { MASK_ALTIVEC, CODE_FOR_altivec_vforksw, "__builtin_altivec_vforksw", ALTIVEC_BUILTIN_VFORKSW },
+
   { MASK_ALTIVEC, CODE_FOR_altivec_vcfux, "__builtin_altivec_vcfux", ALTIVEC_BUILTIN_VCFUX },
   { MASK_ALTIVEC, CODE_FOR_altivec_vcfsx, "__builtin_altivec_vcfsx", ALTIVEC_BUILTIN_VCFSX },
   { MASK_ALTIVEC, CODE_FOR_altivec_vcmpbfp, "__builtin_altivec_vcmpbfp", ALTIVEC_BUILTIN_VCMPBFP },
@@ -10354,6 +10362,15 @@ static struct builtin_description bdesc_2arg[] =
   { MASK_ALTIVEC, CODE_FOR_nothing, "__builtin_vec_vavguh", ALTIVEC_BUILTIN_VEC_VAVGUH },
   { MASK_ALTIVEC, CODE_FOR_nothing, "__builtin_vec_vavgsb", ALTIVEC_BUILTIN_VEC_VAVGSB },
   { MASK_ALTIVEC, CODE_FOR_nothing, "__builtin_vec_vavgub", ALTIVEC_BUILTIN_VEC_VAVGUB },
+
+  { MASK_ALTIVEC, CODE_FOR_nothing, "__builtin_vec_fork",    ALTIVEC_BUILTIN_VEC_FORK },
+  { MASK_ALTIVEC, CODE_FOR_nothing, "__builtin_vec_vforksw", ALTIVEC_BUILTIN_VEC_VFORKSW },
+  { MASK_ALTIVEC, CODE_FOR_nothing, "__builtin_vec_vforkuw", ALTIVEC_BUILTIN_VEC_VFORKUW },
+  { MASK_ALTIVEC, CODE_FOR_nothing, "__builtin_vec_vforksh", ALTIVEC_BUILTIN_VEC_VFORKSH },
+  { MASK_ALTIVEC, CODE_FOR_nothing, "__builtin_vec_vforkuh", ALTIVEC_BUILTIN_VEC_VFORKUH },
+  { MASK_ALTIVEC, CODE_FOR_nothing, "__builtin_vec_vforksb", ALTIVEC_BUILTIN_VEC_VFORKSB },
+  { MASK_ALTIVEC, CODE_FOR_nothing, "__builtin_vec_vforkub", ALTIVEC_BUILTIN_VEC_VFORKUB },
+
   { MASK_ALTIVEC, CODE_FOR_nothing, "__builtin_vec_cmpb", ALTIVEC_BUILTIN_VEC_CMPB },
   { MASK_ALTIVEC, CODE_FOR_nothing, "__builtin_vec_cmpeq", ALTIVEC_BUILTIN_VEC_CMPEQ },
   { MASK_ALTIVEC, CODE_FOR_nothing, "__builtin_vec_vcmpeqfp", ALTIVEC_BUILTIN_VEC_VCMPEQFP },
