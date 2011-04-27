@@ -27472,6 +27472,8 @@ ix86_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
   switch (fcode)
     {
     case IX86_BUILTIN_TSTORE:
+      if (!TARGET_64BIT)
+	return 0;
       arg0 = CALL_EXPR_ARG (exp, 0);
       arg1 = CALL_EXPR_ARG (exp, 1);
       arg2 = CALL_EXPR_ARG (exp, 2);
@@ -27479,23 +27481,27 @@ ix86_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
       op1 = expand_normal (arg1);
       op2 = expand_normal (arg2);
       if (!REG_P (op0))
-	op0 = copy_to_mode_reg (SImode, op0);
+	op0 = copy_to_mode_reg (DImode, op0);
       if (!REG_P (op1))
-	op1 = copy_to_mode_reg (SImode, op1);
+	op1 = copy_to_mode_reg (DImode, op1);
       if (!REG_P (op2))
-	op1 = copy_to_mode_reg (SImode, op2);
+	op1 = copy_to_mode_reg (DImode, op2);
       emit_insn (gen_dta_tstore (op0, op1, op2));
       return 0;
 
     case IX86_BUILTIN_TDECREASE:
+      if (!TARGET_64BIT)
+	return 0;
       arg0 = CALL_EXPR_ARG (exp, 0);
       op0 = expand_normal (arg0);
       if (!REG_P (op0))
-	op0 = copy_to_mode_reg (SImode, op0);
+	op0 = copy_to_mode_reg (DImode, op0);
       emit_insn (gen_dta_tdecrease (op0));
       return 0;
 
     case IX86_BUILTIN_TEND:
+      if (!TARGET_64BIT)
+	return 0;
       emit_insn (gen_dta_tend ());
       return 0;
 

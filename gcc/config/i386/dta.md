@@ -20,63 +20,72 @@
 ;; <http://www.gnu.org/licenses/>.
 
 (define_expand "dta_tcreate"
-  [(set (match_operand:SI 0 "register_operand" "=a")
-	(unspec_volatile:SI
-	  [(match_operand:SI 1 "register_operand" "a")
-	   (match_operand:SI 2 "register_operand" "c")]
+  [(set (match_operand:DI 0 "register_operand" "=a")
+	(unspec_volatile:DI
+	  [(match_operand:DI 1 "register_operand" "a")
+	   (match_operand:DI 2 "register_operand" "c")]
 	  UNSPEC_TCREATE))]
-  "TARGET_DTA"
+  "TARGET_64BIT && TARGET_DTA"
 {
-  rtx edx = gen_rtx_REG (SImode, DX_REG);
-  emit_insn (gen_rtx_SET (SImode, edx, const0_rtx));
+  rtx edx = gen_rtx_REG (DImode, DX_REG);
+  emit_insn (gen_rtx_SET (DImode, edx, const0_rtx));
 })
 
 (define_insn "*dta_tcreate"
-  [(set (match_operand:SI 0 "register_operand" "=a")
-	(unspec_volatile:SI
-	  [(match_operand:SI 1 "register_operand" "a")
-	   (match_operand:SI 2 "register_operand" "c")]
+  [(set (match_operand:DI 0 "register_operand" "=a")
+	(unspec_volatile:DI
+	  [(match_operand:DI 1 "register_operand" "a")
+	   (match_operand:DI 2 "register_operand" "c")]
 	  UNSPEC_TCREATE))]
-  "TARGET_DTA"
+  "TARGET_64BIT && TARGET_DTA"
   "dtacreate")
 
 (define_insn "dta_tdecrease"
   [(unspec_volatile
-     [(match_operand:SI 0 "register_operand" "c")]
+     [(match_operand:DI 0 "register_operand" "c")]
       UNSPEC_TDECREASE)]
-  "TARGET_DTA"
+  "TARGET_64BIT && TARGET_DTA"
   "dtadecrease"
   [(set_attr "length" "3")])
 
 (define_expand "dta_tread"
-  [(set (match_operand:SI 0 "register_operand" "=a")
-	(unspec_volatile:SI [(match_operand:SI 1 "register_operand" "c")]
+  [(set (match_operand:DI 0 "register_operand" "=a")
+	(unspec_volatile:DI [(match_operand:DI 1 "register_operand" "c")]
 	  UNSPEC_TREAD))]
-  "TARGET_DTA"
+  "TARGET_64BIT && TARGET_DTA"
   ""
 )
 
 (define_insn "*dta_tread"
-  [(set (match_operand:SI 0 "register_operand" "=a")
-	(unspec_volatile:SI [(match_operand:SI 1 "register_operand" "c")]
+  [(set (match_operand:DI 0 "register_operand" "=a")
+	(unspec_volatile:DI [(match_operand:DI 1 "register_operand" "c")]
 	  UNSPEC_TREAD))]
-  "TARGET_DTA"
+  "TARGET_64BIT && TARGET_DTA"
   "dtaread"
   [(set_attr "length" "3")
-   (set_attr "mode" "SI")])
+   (set_attr "mode" "DI")])
 
-(define_insn "dta_tstore"
+(define_expand "dta_tstore"
   [(unspec_volatile [(match_operand:SI 0 "register_operand" "a")
-       (match_operand:SI 1 "register_operand" "c")
+       (match_operand:DI 1 "register_operand" "c")
        (match_operand:SI 2 "register_operand" "b")]
        UNSPEC_TSTORE)]
-  "TARGET_DTA"
+  "TARGET_64BIT && TARGET_DTA"
+  ""
+)
+
+(define_insn "*dta_tstore"
+  [(unspec_volatile [(match_operand:SI 0 "register_operand" "a")
+       (match_operand:DI 1 "register_operand" "c")
+       (match_operand:SI 2 "register_operand" "b")]
+       UNSPEC_TSTORE)]
+  "TARGET_64BIT && TARGET_DTA"
   "dtastore"
   [(set_attr "length" "3")])
 
 (define_insn "dta_tend"
   [(unspec_volatile [(const_int 0)] UNSPEC_TEND)]
-  ""
+  "TARGET_64BIT && TARGET_DTA"
   "dtaend"
   [(set_attr "length" "3")
    (set_attr "mode" "none")])
