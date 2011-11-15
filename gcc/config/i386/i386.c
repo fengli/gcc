@@ -6140,6 +6140,18 @@ type_natural_mode (const_tree type, const CUMULATIVE_ARGS *cum)
   return mode;
 }
 
+/* rtx */
+/* gen_dta_tcreate (enum machine_mode mode, rtx op0, rtx op1, rtx op2) */
+/* { */
+/*   int a = REGNO (op0); */
+/*   int b = REGNO (op1); */
+/*   int c = REGNO (op2); */
+/*   int encoded = a<<28|b<<24|c<<20; */
+/*   rtx encoded_rtx = GEN_INT (encoded); */
+
+/*   return encoded_rtx; */
+/* } */
+
 /* We want to pass a value in REGNO whose "natural" mode is MODE.  However,
    this may not agree with the mode that the type system has chosen for the
    register, which is ORIG_MODE.  If ORIG_MODE is not BLKmode, then we can
@@ -27486,6 +27498,7 @@ ix86_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
 	op1 = copy_to_mode_reg (DImode, op1);
       if (!REG_P (op2))
 	op1 = copy_to_mode_reg (DImode, op2);
+
       emit_insn (gen_dta_tstore (op0, op1, op2));
       return 0;
 
