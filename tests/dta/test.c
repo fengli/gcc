@@ -1,37 +1,46 @@
 /* { dg-options "-O2 -mdta" } */
 /* #include <x86intrin.h> */
 
-typedef struct fp{
-  int st;
-}fp;
-
-void
-TREAD ()
-{
-  int offset;
-  int b;
-  b = __builtin_ia32_tread(offset);
-}
+typedef unsigned long long uint64_t;
 
 void
 TSCHEDULE()
 {
-  fp *fp0, *fp_ret;
-  int SC = 6;
-  fp_ret = (fp *)__builtin_ia32_tcreate(fp0,SC);
-}
-
-void
-TSTORE()
-{
-  int offset = 5;
-  fp *fp;
-  int value = 66;
-  __builtin_ia32_tstore (value,fp,offset);
+  uint64_t tid_ret;
+  void *ip;
+  int sc = 6;
+  int sz = 100;
+  tid_ret = __builtin_tstar_create(ip, sc, sz);
 }
 
 void
 TDESTROY()
 {
-  __builtin_ia32_tend();
+  uint64_t tid;
+  tid = __builtin_tstar_destroy ();
+}
+
+void
+TLOAD()
+{
+  uint64_t tid;
+  tid = __builtin_tstar_load ();
+}
+
+void
+TCACHE ()
+{
+  uint64_t tid;
+  uint64_t localfp;
+
+  localfp = __builtin_tstar_cache (tid);
+}
+
+void
+DECREASE_N ()
+{
+  uint64_t n;
+  uint64_t tid;
+
+  __builtin_tstar_decreasen (tid, n);
 }
