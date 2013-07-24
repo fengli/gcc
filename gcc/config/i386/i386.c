@@ -24113,11 +24113,15 @@ enum ix86_builtins
   IX86_BUILTIN_CRC32DI,
 
   /* DTA. */
-  IX86_BUILTIN_TEND,
-  IX86_BUILTIN_TSTORE,
-  IX86_BUILTIN_TREAD,
+  /* TSTAR instructions  */
+  IX86_BUILTIN_TSCHEDULE,
+  IX86_BUILTIN_TDESTROY,
   IX86_BUILTIN_TDECREASE,
-  IX86_BUILTIN_TCREATE,
+  IX86_BUILTIN_TDECREASEN,
+  IX86_BUILTIN_TCACHE,
+  IX86_BUILTIN_TLOAD,
+  IX86_BUILTIN_TSUBSCRIBE,
+  IX86_BUILTIN_TPUBLISH,
 
   IX86_BUILTIN_PCMPESTRI128,
   IX86_BUILTIN_PCMPESTRM128,
@@ -25309,8 +25313,7 @@ static const struct builtin_description bdesc_args[] =
   { OPTION_MASK_ISA_SSE4_2 | OPTION_MASK_ISA_CRC32 | OPTION_MASK_ISA_64BIT, CODE_FOR_sse4_2_crc32di, "__builtin_ia32_crc32di", IX86_BUILTIN_CRC32DI, UNKNOWN, (int) UINT64_FTYPE_UINT64_UINT64 },
 
   /* DTA */
-  { OPTION_MASK_ISA_DTA, CODE_FOR_dta_tcreate, "__builtin_ia32_tcreate", IX86_BUILTIN_TCREATE, UNKNOWN, (int) PVOID_FTYPE_PVOID_UINT },
-  { OPTION_MASK_ISA_DTA, CODE_FOR_dta_tread, "__builtin_ia32_tread", IX86_BUILTIN_TREAD, UNKNOWN, (int) UINT_FTYPE_UINT },
+  { OPTION_MASK_ISA_DTA, CODE_FOR_tstar_cache, "__builtin_tstar_cache", IX86_BUILTIN_TCACHE, UNKNOWN, (int) UINT64_FTYPE_UINT64 },
 
   /* SSE4A */
   { OPTION_MASK_ISA_SSE4A, CODE_FOR_sse4a_extrqi, "__builtin_ia32_extrqi", IX86_BUILTIN_EXTRQI, UNKNOWN, (int) V2DI_FTYPE_V2DI_UINT_UINT },
@@ -25820,12 +25823,19 @@ ix86_init_mmx_sse_builtins (void)
 	       VOID_FTYPE_UNSIGNED_UNSIGNED, IX86_BUILTIN_MWAIT);
 
   /* DTA */
-  def_builtin (OPTION_MASK_ISA_DTA, "__builtin_ia32_tstore",
-	       VOID_FTYPE_UINT_PVOID_UINT, IX86_BUILTIN_TSTORE);
-  def_builtin (OPTION_MASK_ISA_DTA, "__builtin_ia32_tdecrease",
-	       VOID_FTYPE_PVOID, IX86_BUILTIN_TDECREASE);
-  def_builtin (OPTION_MASK_ISA_DTA, "__builtin_ia32_tend",
-	       VOID_FTYPE_VOID, IX86_BUILTIN_TEND);
+  def_builtin (OPTION_MASK_ISA_DTA, "__builtin_tstar_decreasen",
+	       VOID_FTYPE_UINT64_UINT64, IX86_BUILTIN_TDECREASEN);
+  def_builtin (OPTION_MASK_ISA_DTA, "__builtin_tstar_destroy",
+	       UINT64_FTYPE_VOID, IX86_BUILTIN_TDESTROY);
+  def_builtin (OPTION_MASK_ISA_DTA, "__builtin_tstar_load",
+	       UINT64_FTYPE_VOID, IX86_BUILTIN_TLOAD);
+  def_builtin (OPTION_MASK_ISA_DTA, "__builtin_tstar_schedule",
+	       UINT64_FTYPE_PVOID_UINT_UINT, IX86_BUILTIN_TSCHEDULE);
+
+  /* def_builtin (OPTION_MASK_ISA_DTA, "__builtin_tstar_subscribe", */
+  /* 	       VOID_FTYPE_UINT_PVOID_UINT, IX86_BUILTIN_TSUBSCRIBE); */
+  /* def_builtin (OPTION_MASK_ISA_DTA, "__builtin_tstar_publish", */
+  /* 	       VOID_FTYPE_UINT_PVOID_UINT, IX86_BUILTIN_TPUBLISH); */
 
   /* AES */
   def_builtin_const (OPTION_MASK_ISA_AES, "__builtin_ia32_aesenc128",
@@ -26748,6 +26758,7 @@ ix86_expand_args_builtin (const struct builtin_description *d,
     case FLOAT_FTYPE_FLOAT:
     case INT_FTYPE_INT:
     case UINT_FTYPE_UINT:
+    case UINT64_FTYPE_UINT64:
     case VOID_FTYPE_UINT:
     case UINT64_FTYPE_INT:
     case UINT16_FTYPE_UINT16:
@@ -26910,6 +26921,8 @@ ix86_expand_args_builtin (const struct builtin_description *d,
     case V4DF_FTYPE_V4DF_V4DF_V4DF:
     case V4SF_FTYPE_V4SF_V4SF_V4SF:
     case V2DF_FTYPE_V2DF_V2DF_V2DF:
+    case PVOID_FTYPE_PVOID_UINT_UINT:
+    case UINT64_FTYPE_UINT64_UINT_UINT:
       nargs = 3;
       break;
     case V16QI_FTYPE_V16QI_V16QI_INT:
@@ -27455,7 +27468,7 @@ ix86_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
   enum insn_code icode;
   tree fndecl = TREE_OPERAND (CALL_EXPR_FN (exp), 0);
   tree arg0, arg1, arg2;
-  rtx op0, op1, op2, pat;
+  rtx op0, op1, op2, pat, insn;
   enum machine_mode mode0, mode1, mode2;
   unsigned int fcode = DECL_FUNCTION_CODE (fndecl);
 
@@ -27483,40 +27496,88 @@ ix86_expand_builtin (tree exp, rtx target, rtx subtarget ATTRIBUTE_UNUSED,
 
   switch (fcode)
     {
-    case IX86_BUILTIN_TSTORE:
-      if (!TARGET_64BIT)
-	return 0;
+    case IX86_BUILTIN_TLOAD:
+      icode = CODE_FOR_tstar_load;
+      if (!target
+          || !insn_data[icode].operand[0].predicate (target, DImode))
+        target = gen_reg_rtx (DImode);
+      emit_insn (gen_tstar_load (target));
+      return target;
+
+    case IX86_BUILTIN_TDESTROY:
+      icode = CODE_FOR_tstar_destroy;
+      if (!target
+          || !insn_data[icode].operand[0].predicate (target, DImode))
+        target = gen_reg_rtx (DImode);
+      emit_insn (gen_tstar_destroy (target));
+      return target;
+
+    case IX86_BUILTIN_TDECREASEN:
+      icode = CODE_FOR_tstar_decreasen;
+
+      arg0 = CALL_EXPR_ARG (exp, 0);
+      arg1 = CALL_EXPR_ARG (exp, 1);
+      op0 = expand_normal (arg0);
+      op1 = expand_normal (arg1);
+
+      if (GET_MODE (op0) == DImode || GET_MODE (op0) == VOIDmode)
+	op0 = copy_to_mode_reg (DImode, op0);
+      else
+	{
+	  op0 = copy_to_reg (op0);
+	  op0 = simplify_gen_subreg (DImode, op0, GET_MODE (op0), 0);
+	}
+
+      if (GET_MODE (op1) == DImode || GET_MODE (op1) == VOIDmode)
+	op1 = copy_to_mode_reg (DImode, op1);
+      else
+	{
+	  op1 = copy_to_reg (op1);
+	  op1 = simplify_gen_subreg (DImode, op1, GET_MODE (op1), 0);
+	}
+
+      emit_insn (gen_tstar_decreasen (op0, op1));
+      return target;
+
+    case IX86_BUILTIN_TSCHEDULE:
       arg0 = CALL_EXPR_ARG (exp, 0);
       arg1 = CALL_EXPR_ARG (exp, 1);
       arg2 = CALL_EXPR_ARG (exp, 2);
+
       op0 = expand_normal (arg0);
       op1 = expand_normal (arg1);
       op2 = expand_normal (arg2);
-      if (!REG_P (op0))
+
+      if (GET_MODE (op0) == DImode || GET_MODE (op0) == VOIDmode)
 	op0 = copy_to_mode_reg (DImode, op0);
-      if (!REG_P (op1))
+      else
+	{
+	  op0 = copy_to_reg (op0);
+	  op0 = simplify_gen_subreg (DImode, op0, GET_MODE (op0), 0);
+	}
+
+      if (GET_MODE (op1) == DImode || GET_MODE (op1) == VOIDmode)
 	op1 = copy_to_mode_reg (DImode, op1);
-      if (!REG_P (op2))
-	op1 = copy_to_mode_reg (DImode, op2);
+      else
+	{
+	  op1 = copy_to_reg (op1);
+	  op1 = simplify_gen_subreg (DImode, op1, GET_MODE (op1), 0);
+	}
 
-      emit_insn (gen_dta_tstore (op0, op1, op2));
-      return 0;
+      if (GET_MODE (op2) == DImode || GET_MODE (op2) == VOIDmode)
+	op2 = copy_to_mode_reg (DImode, op2);
+      else
+	{
+	  op2 = copy_to_reg (op2);
+	  op2 = simplify_gen_subreg (DImode, op2, GET_MODE (op2), 0);
+	}
 
-    case IX86_BUILTIN_TDECREASE:
-      if (!TARGET_64BIT)
-	return 0;
-      arg0 = CALL_EXPR_ARG (exp, 0);
-      op0 = expand_normal (arg0);
-      if (!REG_P (op0))
-	op0 = copy_to_mode_reg (DImode, op0);
-      emit_insn (gen_dta_tdecrease (op0));
-      return 0;
+      expand_simple_binop (DImode, ASHIFT, op0, GEN_INT (32),op0,1,OPTAB_DIRECT);
+      insn = emit_insn (gen_rtx_SET (VOIDmode, op0,
+                                     gen_rtx_PLUS (DImode, op0, op1)));
+      insn = emit_insn (gen_tstar_schedule (op2,op0,op2));
 
-    case IX86_BUILTIN_TEND:
-      if (!TARGET_64BIT)
-	return 0;
-      emit_insn (gen_dta_tend ());
-      return 0;
+      return op2;
 
     case IX86_BUILTIN_MASKMOVQ:
     case IX86_BUILTIN_MASKMOVDQU:

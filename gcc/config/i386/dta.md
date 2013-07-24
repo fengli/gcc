@@ -19,142 +19,101 @@
 ;; along with GCC; see the file COPYING3.  If not see
 ;; <http://www.gnu.org/licenses/>.
 
-;; TSCHEDULE RS1, RS2, RD
-(define_insn "dta_tcreate"
-  [(set (match_operand:DI 0 "register_operand" "=r")
-	(unspec_volatile:DI
-	  [(match_operand:SI 1 "register_operand" "r")
-	   (match_operand:DI 2 "register_operand" "r")]
-	  UNSPEC_TCREATE))
-    (clobber (reg:CC FLAGS_REG))]
+;; General version for void tdecreasen (void *fp, size_t n);
+(define_insn "*tstar_decreasen"
+  [(unspec_volatile:DI
+          [(match_operand:DI 0 "register_operand" "R")
+          (match_operand:DI 1 "register_operand" "R")]
+          UNSPEC_TDECREASEN)]
   "TARGET_64BIT && TARGET_DTA"
   {
-     int rs1 = REGNO (operands[0]);
-     int rs2 = REGNO (operands[1]);
-     int rd = REGNO (operands[2]);
-     operands[3] = GEN_INT(0000<<28|rs1<<24|rs2<<20|rd<<16);
+     int tsu_decreasen = 0x0c;
+     int magic_num = 0x2DAF;
+     unsigned int tdecreasen_inst = magic_num<<16|tsu_decreasen;
+     operands[2] = GEN_INT (tdecreasen_inst);
 
-     return ";;begin TSCHEDULE %0, %1, %2\n\tclc; \n\tcmovc\t %1, %3;\n\t;;end TSCHEDULE";
+     return "#begin TDECREASEN %0 (fp), %1 (n)\n\tprefetchnta\t%c2(%0,%1,1)\n\t#end TDECREASEN\n";
    }
 )
 
-;; TDESTROY
-(define_insn "dta_tend"
-  [(unspec_volatile [(const_int 0)] UNSPEC_TEND)]
-  "TARGET_64BIT && TARGET_DTA"
-  "TDESTROY"
-  [(set_attr "length" "3")
-   (set_attr "mode" "none")])
+;; Immediate version for void tdecreasen (void *fp, size_t n);
+(define_insn "tstar_decreasen"
+  [(unspec_volatile:DI
+          [(match_operand:DI 0 "register_operand" "R")
+          (match_operand:DI 1 "immediate_operand" "")]
+          UNSPEC_TDECREASEN)]
+  "TARGET_64BIT && TARGET_DTA && INTVAL(operands[1])<256"
+  {
+     int tsu_decreasen = 0x0c;
+     int magic_num = 0x2DAF;
+     int n = INTVAL(operands[1]);
+     unsigned int tdecreasen_inst = magic_num<<16|n<<8|tsu_decreasen;
+     operands[2] = GEN_INT (tdecreasen_inst);
 
-;; TREAD offset, RD
-(define_insn "dta_tread"
-  [(set (match_operand:DI 0 "register_operand" "=r")
-	(unspec_volatile:DI [(match_operand:DI 1 "register_operand" "r")]
-	  UNSPEC_TREAD))
-   (clobber (reg:CC FLAGS_REG))]
+     return "#begin TDECREASENi %0 (fp), %1 (n)\n\tprefetchnta\t%c2(%0,%0,1)\n\t#end TDECREASENi\n";
+   }
+)
+
+(define_insn "tstar_destroy"
+  [(set (match_operand:DI 0 "register_operand" "=R")
+        (unspec_volatile [(const_int 0)] UNSPEC_TDESTROY))]
+  "TARGET_DTA && TARGET_64BIT"
+   {
+     int tsu_destroy = 0x05;
+     int magic_num = 0x2DAF;
+     unsigned int tdestroy_inst = magic_num<<16|tsu_destroy;
+     operands[1] = GEN_INT (tdestroy_inst);
+
+     return "#begin %0 (fp) < TDESTROY\n\tprefetchnta\t%c1(%0,%0,1)\n\t#destroy TDESTROY\n";
+   }
+   [(set_attr "length" "3")
+    (set_attr "mode" "none")])
+
+(define_insn "tstar_cache"
+  [(set (match_operand:DI 0 "register_operand" "=R")
+        (unspec_volatile:DI
+          [(match_operand:DI 1 "register_operand" "0")]
+          UNSPEC_TCACHE))]
   "TARGET_64BIT && TARGET_DTA"
   {
-    int offset = REGNO (operands[0]);
-    int rd = REGNO (operands[1]);
-    operands[2] = GEN_INT (0010<<28|offset<<24|rd<<20);
+     int tsu_cache = 0x0a;
+     int magic_num = 0x2DAF;
+     unsigned int tcache_inst = magic_num<<16|tsu_cache;
+     operands[2] = GEN_INT (tcache_inst);
 
-    return ";;begin TREAD %0, %1\n\tclc\n\tcmovc\t%1,%2\n\t;;end TREAD";
-  }
-  [(set_attr "length" "3")
-   (set_attr "mode" "DI")])
+     return "#begin %0 (tfp) < TCACHE %0 (tid)\n\tprefetchnta\t%c2(%0,%0,1)\n\t#end TCACHE\n";
+   }
+)
 
-;; TSTORE RS, RD, offset
-(define_insn "dta_tstore"
-  [(unspec_volatile [(match_operand:SI 0 "register_operand" "r")
-       (match_operand:DI 1 "register_operand" "r")
-       (match_operand:SI 2 "register_operand" "r")]
-       UNSPEC_TSTORE)
-   (clobber (reg:CC FLAGS_REG))]
+(define_insn "tstar_load"
+  [(set (match_operand:DI 0 "register_operand" "=R")
+        (unspec_volatile [(const_int 0)] UNSPEC_TLOAD))]
+  "TARGET_DTA && TARGET_64BIT"
+   {
+     int tsu_load = 0x09;
+     int magic_num = 0x2DAF;
+     unsigned int tload_inst = magic_num<<16|tsu_load;
+     operands[1] = GEN_INT (tload_inst);
+
+     return "#begin %0 (fp) < TLOAD\n\tprefetchnta\t%c1(%0,%0,1)\n\t#end TLOAD\n";
+   }
+   [(set_attr "length" "3")
+    (set_attr "mode" "none")])
+
+;; General version for void *tschedule
+(define_insn "tstar_schedule"
+  [(set (match_operand:DI 0 "register_operand" "=R")
+        (unspec_volatile:DI
+          [(match_operand:DI 1 "register_operand" "R")
+          (match_operand:DI 2 "register_operand" "0")]
+          UNSPEC_TSCHEDULE))]
   "TARGET_64BIT && TARGET_DTA"
   {
-    int rs = REGNO (operands[0]);
-    int rd = REGNO (operands[1]);
-    int offset = REGNO (operands[2]);
-    operands[3] = GEN_INT (0011<<28|rs<<24|rd<<20|offset<<16);
+     int tsu_schedule = 0x04;
+     int magic_num = 0x2DAF;
+     unsigned int tschedule_inst = magic_num<<16|tsu_schedule;
+     operands[3] = GEN_INT (tschedule_inst);
 
-    return ";;begin TSTORE %0, %1, %2\n\tclc\n\tcmovc\t%1, %3\n\t;;end TSTORE";
-  }
-  [(set_attr "length" "3")])
-
-;; This will not be used. Keep here for compatibility reasons.
-(define_insn "dta_tdecrease"
-  [(unspec_volatile
-     [(match_operand:DI 0 "register_operand" "r")]
-      UNSPEC_TDECREASE)]
-  "TARGET_64BIT && TARGET_DTA"
-  "TDEC\t %0"
-  [(set_attr "length" "3")])
-
-;; (define_expand "dta_tread"
-;;   [(set (match_operand:SI 0 "register_operand" "=r")
-;; 	(unspec_volatile:SI [(match_operand:DI 1 "register_operand" "r")]
-;; 	  UNSPEC_TREAD))]
-;;   "TARGET_64BIT && TARGET_DTA"
-;;   ""
-;; )
-
-;; (define_insn "*dta_tread"
-;;   [(set (match_operand:SI 0 "register_operand" "=r")
-;; 	(unspec_volatile:SI [(match_operand:DI 1 "register_operand" "r")]
-;; 	  UNSPEC_TREAD))]
-;;   "TARGET_64BIT && TARGET_DTA"
-;;   "TREAD\t%1, %0"
-;;   [(set_attr "length" "3")
-;;    (set_attr "mode" "DI")])
-
-;; (define_expand "dta_tstore"
-;;   [(unspec_volatile [(match_operand:SI 0 "register_operand" "r")
-;;        (match_operand:DI 1 "register_operand" "r")
-;;        (match_operand:SI 2 "register_operand" "r")]
-;;        UNSPEC_TSTORE)]
-;;   "TARGET_64BIT && TARGET_DTA"
-;;   ""
-;; )
-
-;; (define_insn "*dta_tstore"
-;;   [(unspec_volatile [(match_operand:SI 0 "register_operand" "r")
-;;        (match_operand:DI 1 "register_operand" "r")
-;;        (match_operand:SI 2 "register_operand" "r")]
-;;        UNSPEC_TSTORE)]
-;;   "TARGET_64BIT && TARGET_DTA"
-;;   "TSTORE\t%0, %1, %2"
-;;   [(set_attr "length" "3")])
-
-
-;; (define_insn_and_split "dta_tcreate"
-;;   [(set (match_operand:DI 0 "register_operand" "=r")
-;; 	(unspec_volatile:DI
-;; 	  [(match_operand:DI 1 "register_operand" "r")
-;; 	   (match_operand:DI 2 "register_operand" "r")]
-;; 	  UNSPEC_TCREATE))]
-;;   "TARGET_64BIT && TARGET_DTA"
-;;   ""
-;;   "reload_completed"
-;;   [(clobber (reg:CC FLAGS_REG))
-;;    (set (match_dup 0) (match_dup 4))
-;;    (set (match_dup 1) (match_dup 5))
-;;    (set (match_dup 2) (match_dup 6))
-;;    ]
-;;   "{
-;;      int a = REGNO (operands[0]);
-;;      int b = REGNO (operands[1]);
-;;      int c = REGNO (operands[2]);
-;;      operands[4] = GEN_INT (a);
-;;      operands[5] = GEN_INT (b);
-;;      operands[6] = GEN_INT (c);
-;;    }"
-;; )
-
-;; (define_insn "*dta_tcreate"
-;;   [(set (match_operand:DI 0 "register_operand" "=r")
-;; 	(unspec_volatile:DI
-;; 	  [(match_operand:DI 1 "register_operand" "r")
-;; 	   (match_operand:SI 2 "register_operand" "r")]
-;; 	  UNSPEC_TCREATE))]
-;;   "TARGET_64BIT && TARGET_DTA"
-;;   "TCREATE\t%1, %2, %0")
+     return "#begin %0 (fp) < TSCHEDULE %0 (workfn), %1 (sc<<32+size)\n\tprefetchnta\t%c3(%0,%1,1)\n\t#end TSCHEDULE\n";
+   }
+)
